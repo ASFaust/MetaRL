@@ -14,4 +14,4 @@ For training, the actor network uses a backward pass that feeds information thro
 
 The weights of the actor network are clipped to a maximum absolute value of 1.0 after every weight update.
 
-The networks are implemented in opencl to allow for fast parallel computation on a gpu, so that many individuals of the genetic algorithm can be evaluated in parallel.
+The networks are implemented in pytorch to allow for GPU acceleration.
