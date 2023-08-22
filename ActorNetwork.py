@@ -25,7 +25,6 @@ class ActorNetwork:
             learning_rate=0.1,
             device='cuda',
             seed=None):
-        ):
         #if seed is none, the parameters are initialized randomly, but the same for every batch
         #if seed is not none, the parameters are initialized randomly, still the same for every batch, but according to the seed
         self.input_dim = layer_dims[0]
