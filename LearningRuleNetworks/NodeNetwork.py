@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-class NodeNetwork
+class NodeNetwork:
     param_count = 66
 
     def __init__(self,params):
