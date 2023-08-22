@@ -6,7 +6,7 @@ self,
             input_dim,
             output_dim,
             lrn,
-            previous_layer,
+            prev:ious_layer,
             weight_limit=1,
             sigma_limit=1,
             sigma_init=0.1,
@@ -51,7 +51,7 @@ class ActorNetwork:
                     learning_rate,
                     device,
                     current_seed
-            )
+            ))
             if seed is not None:
                 current_seed += 1
 
