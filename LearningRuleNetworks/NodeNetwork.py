@@ -37,23 +37,25 @@ class NodeNetwork:
         # x has shape (batch_dim, some_dim, input_dim)
         # we want to return a tensor of shape (batch_dim, some_dim, output_dim)
         # first we map
-        h1 = self.mm(x, self.w1) + self.b1
+        h1 = self.mm(x, self.w1, self.b1)
         h1 = torch.tanh(h1)
 
         input_h2 = torch.cat((state, h1), dim=2) #6 dimensional recurrent input
-        h2 = self.mm(input_h2, self.w2) + self.b2 #
+        h2 = self.mm(input_h2, self.w2, self.b2)
         h2 = torch.tanh(h2)
 
         input_h3 = torch.cat((h2, h1), dim=2) #6 dimensional recurrent input
-        h3 = self.mm(input_h3, self.w3) + self.b3 #
+        h3 = self.mm(input_h3, self.w3, self.b3)
         h3 = torch.tanh(h3)
 
         new_state = h2
 
         return h3, new_state
 
-    def mm(self, x, w):
-        return torch.einsum('bsi,bio->bso', (x, w))
+
+    def mm(self, x, w, b):
+        matmul = torch.einsum('bsi,bio->bso', (x, w))
+        return matmul + b.unsqueeze(1)
 
 
 

@@ -1,28 +1,28 @@
 import torch
-from Individual import Individual
 
 class ActorNetworkLayer:
-
     def __init__(
             self,
             input_dim,
             output_dim,
-            lrn,
+            learning_rule,
             previous_layer,
-            weight_limit=1,
-            sigma_limit=1,
-            sigma_init=0.1,
-            learning_rate=0.1,
+            weight_limit,
+            sigma_limit,
+            sigma_init,
+            learning_rate,
             device='cuda',
             seed=None
             ):
-        # lrn: learning rule networks
-        self.learning_rule_networks = lrn
-        self.batch_dim = lrn.batch_dim
+        self.learning_rule = learning_rule
+        self.batch_dim = learning_rule.batch_dim
         self.learning_rate = learning_rate
 
         self.weight_limit = weight_limit
         self.sigma_limit = sigma_limit
+
+        self.device = device
+
 
         #the weights should be the same for every batch, but will be altered differently depending on the batch
         #they should be initialized randomly, but the same for every batch, so that the results become comparable
@@ -45,20 +45,17 @@ class ActorNetworkLayer:
         self.samples = None
         self.output = None
 
-        self.device = device
-
         self.node_network_state = None
         self.connection_network_state = None
 
-        self.backward_info_dim = Individual.backward_info_dim
-        self.signal_dim = Individual.signal_dim
+        self.backward_info_dim = 5
+        self.signal_dim = 1
 
         self.reset()
 
     def reset(self):
-        self.node_network_state = self.lrn.node_network.get_zero_state(self.out_dim)
-
-        self.connection_network_state = self.lrn.connection_network.get_zero_state(self.out_dim * self.in_dim)
+        self.node_network_state = self.learning_rule.node_network.get_zero_state(self.out_dim)
+        self.connection_network_state = self.learning_rule.connection_network.get_zero_state(self.out_dim * self.in_dim)
 
     def forward(self, x):
         # x: (batch_dim, input_dim) float tensor
@@ -91,17 +88,16 @@ class ActorNetworkLayer:
         # can we vectorize this?
 
         # self.learning_rules[0].node_network(self.output, signal)
-
+        print(self.get_backward_info().shape)
         node_input = torch.cat([self.get_backward_info(), signal], dim=2)
 
         # should have shape (batch_dim,output_dim, (5 + signal_dim))
-
         # one set of weights of the node network is used for [0,:,:], another for [1,:,:] etc.
         # so the input dimensionality of the node network is 5 + signal_dim, not too bad.
         # if we use moving average + variance, it is 3 * (5 + signal_dim),
         # which is quite large for a genetic algorithm to optimize
 
-        out, self.node_network_state = self.lrn.node_network(node_input, self.node_network_state)
+        out, self.node_network_state = self.learning_rule.node_network.forward(node_input, self.node_network_state)
 
         # out contains a new signal that is passed to each connection
         # and out also contains training signals for biases and lambdas
@@ -149,11 +145,11 @@ class ActorNetworkLayer:
         # reshape it to (batch_dim, input_dim * output_dim, self.backward_info_dim * 2 + 1 + signal_dim)
         connection_input = connection_input.reshape(self.batch_dim, self.in_dim * self.out_dim, -1)
         # now we pass it through the connection network
-        out = self.lrn.connection_network(connection_input)
+        out, self.connection_network_state = self.learning_rule.connection_network.forward(connection_input,self.connection_network_state)
         # out has shape (batch_dim, output_dim * input_dim, signal_dim + 1),
         # where + 1 is finally the weight update signal
         # reshape it to (batch_dim, output_dim, input_dim, signal_dim + 1)
-        out = out.reshape(self.batch_dim, self.out_dim, self.in_dim, -1)
+        out = out.reshape(self.batch_dim, self.in_dim, self.out_dim,  -1)
         # so we split it into two parts
 
         # the first part is the signal for the next layer
@@ -161,7 +157,7 @@ class ActorNetworkLayer:
         # has shape (batch_dim, output_dim, input_dim, signal_dim)
         # we need to take the mean over the output dimension to get a signal of shape (batch_dim, input_dim, signal_dim)
         # this is the signal that we pass to the next layer
-        signal_next_layer = torch.mean(signal_next_layer, dim=1)  # todo: maybe more, different aggregation functions?
+        signal_next_layer = torch.mean(signal_next_layer, dim=2)  # todo: maybe more, different aggregation functions?
 
         # the second part is the weight update signal
         signal_weight_update = out[:, :, :, self.signal_dim]

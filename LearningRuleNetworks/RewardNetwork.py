@@ -32,17 +32,20 @@ class RewardNetwork:
         # we want to return a tensor of shape (batch_dim, some_dim, output_dim)
         # first we map
         input_h1 = torch.cat((state, x), dim=2)  # 8 dimensional
-        h1 = self.mm(input_h1, self.w1) + self.b1
+
+        h1 = self.mm(input_h1, self.w1, self.b1)
+         #+ self.b1
         h1 = torch.tanh(h1)
 
         input_h2 = torch.cat((state, h1), dim=2)  # 8 dimensional
 
-        h2 = self.mm(input_h2, self.w2) + self.b2
+        h2 = self.mm(input_h2, self.w2, self.b2)
         h2 = torch.tanh(h2)
 
         new_state = h1  # this is 3 dimensional
 
         return h2, new_state
 
-    def mm(self, x, w):
-        return torch.einsum('bsi,bio->bso', (x, w))
+    def mm(self, x, w, b):
+        matmul = torch.einsum('bsi,bio->bso', (x, w))
+        return matmul + b.unsqueeze(1)
