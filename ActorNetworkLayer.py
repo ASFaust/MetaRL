@@ -88,7 +88,6 @@ class ActorNetworkLayer:
         # can we vectorize this?
 
         # self.learning_rules[0].node_network(self.output, signal)
-        print(self.get_backward_info().shape)
         node_input = torch.cat([self.get_backward_info(), signal], dim=2)
 
         # should have shape (batch_dim,output_dim, (5 + signal_dim))
@@ -114,7 +113,7 @@ class ActorNetworkLayer:
 
         # now alter lambda and bias
         self.sigmas = self.sigmas + signal_sigma
-        self.biases = self.biases + signal_bias
+        self.biases = self.biases + signal_bias * self.learning_rate
 
         # clip sigmas to [0,1]
         self.sigmas = torch.clamp(self.sigmas, 0.0, self.sigma_limit)

@@ -3,14 +3,16 @@ from LearningRule import LearningRule
 from ActorNetwork import ActorNetwork
 from util import count_parameters
 
-params = LearningRule.get_random_params(1000)
+population_size = 1000
+
+params = LearningRule.get_random_params(population_size)
 
 print(count_parameters(params))
 
 lr = LearningRule(params)
 
 actor = ActorNetwork(
-            [2, 9, 2],
+            [2, 20, 20, 2],
             lr,
             weight_limit=4,
             sigma_limit=1,
@@ -20,10 +22,10 @@ actor = ActorNetwork(
             seed=None
 )
 
-x = torch.rand(1000,2,device='cuda')
+x = torch.rand(population_size,2,device='cuda')
 for i in range(10):
     output = actor.forward(x)
-    print(output[0])
 
-actor.train(torch.rand(1000,1,device='cuda'))
-
+for i in range(4000):
+    actor.train(torch.rand(population_size,1,device='cuda'))
+    print(i)
