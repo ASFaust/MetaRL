@@ -29,6 +29,7 @@ class ActorNetworkLayer:
 
         if seed is not None:
             torch.manual_seed(seed)
+        #set weights to zero! lol this is possible because the learning rule can learn to set the weights to the right values even if they are initialized to zero
         self.weights = torch.rand(input_dim, output_dim,
                                   device=self.device) * 2 * weight_limit - weight_limit
         self.weights = self.weights.repeat(self.batch_dim, 1, 1)
@@ -62,7 +63,8 @@ class ActorNetworkLayer:
         # self.weights has shape (batch_dim, input_dim, output_dim)
 
         self.sum = torch.einsum('bi,bio->bo', x, self.weights)
-        self.sum /= self.in_dim
+        #self.sum /= self.in_dim
+
         self.sum += self.biases
         self.samples = torch.normal(self.sum, self.sigmas)
         self.output = torch.tanh(self.samples)  # tanh or swish?
@@ -112,14 +114,17 @@ class ActorNetworkLayer:
         signal_sigma = out[:, :, self.signal_dim + 1]
 
         # now alter lambda and bias
-        self.sigmas = self.sigmas + signal_sigma
-        self.biases = self.biases + signal_bias * self.learning_rate
 
-        # clip sigmas to [0,1]
+        self.sigmas = self.sigmas + signal_sigma
+        #clip sigmas to [0,1]
         self.sigmas = torch.clamp(self.sigmas, 0.0, self.sigma_limit)
 
-        # clip biases to [-1,1]
+        self.biases = self.biases + signal_bias * self.learning_rate
         self.biases = torch.clamp(self.biases, -self.weight_limit, self.weight_limit)
+
+        # clip sigmas to [0,1]
+
+        # clip biases to [-1,1]
 
         backward_info = self.get_backward_info()[:, None, :, :]
         backward_info = backward_info.expand(-1, self.in_dim, -1, -1)

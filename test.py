@@ -29,3 +29,4 @@ for i in range(10):
 for i in range(4000):
     actor.train(torch.rand(population_size,1,device='cuda'))
     print(i)
+
