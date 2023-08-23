@@ -46,6 +46,7 @@ class DoublePendulum:
         delta_theta = theta1 - theta2
         den1 = (2.0 * self.m1 + self.m2) - self.m2 * torch.cos(2.0 * delta_theta)
         den2 = den1  # If you intended different denominators, modify this
+        #broken in some kind of way.
 
         a1 = (-self.g * (2 * self.m1 + self.m2) * torch.sin(theta1) - self.m2 * self.g * torch.sin(
             theta1 - 2 * theta2) - 2 * torch.sin(delta_theta) * self.m2 * (
