@@ -12,8 +12,8 @@ class DoublePendulum:
         self.batch_size = batch_size
         assert self.batch_size == self.l1.shape[0] == self.l2.shape[0] == self.m1.shape[0] == self.m2.shape[0] == self.g.shape[0], "batch_size must be the same for all parameters"
         self.state = torch.zeros((self.batch_size, 4), device=device)  # [theta1, omega1, theta2, omega2]
-        self.state[:,0] = torch.ones((self.batch_size, ), device=device) * np.pi * 1.00001
-        self.state[:,2] = torch.ones((self.batch_size, ), device=device) * np.pi
+        self.state[:,0] = torch.zeros((self.batch_size, ), device=device) * np.pi * 1.00001
+        self.state[:,2] = torch.zeros((self.batch_size, ), device=device) * np.pi
         self.waitkey = -1
         theta1, omega1, theta2, omega2 = self.state.T
         self.last_value = 0
@@ -101,31 +101,25 @@ class DoublePendulum:
     def get_reward(self):
         #reward is the sum of the cosines of the angles minus the absolute value of the angular velocities
         theta1, omega1, theta2, omega2 = self.state.T
-        #value = (1.0 - torch.cos(theta1)) + (1.0 - torch.cos(theta2)) - torch.abs(omega1) - torch.abs(omega2)
-        value = (theta1 - np.pi) ** 2.0 + (theta2 - np.pi) ** 2.0 #theta1 is between 0 and 2pi. We want it to be pi.
-        value -= omega1 ** 2.0 + omega2 ** 2.0
+        value = (1.0 - torch.cos(theta1)) + (1.0 - torch.cos(theta2)) #- torch.abs(omega1) - torch.abs(omega2)
         reward = value - self.last_value
+        #make negative rewards
+        reward[reward < 0] *= 1.1
         self.last_value = value
-        #make negative rewards matter more.
-        #reward_less_than_zero = torch.where(reward <= 0.0, reward, torch.zeros_like(reward))
-        #reward_greater_than_zero = torch.where(reward > 0.0, reward, torch.zeros_like(reward))
-        #reward = reward_less_than_zero * 2.0 + reward_greater_than_zero
-        #clamp negative rewards to 0
-        reward[reward < 0.0] = 0.0
         return reward
 
     def render(self,index, scale=100):
         theta1, omega1, theta2, omega2 = self.state[index]
 
         # Calculate positions
-        x0, y0 = 400, 300  # Center of the window
+        x0, y0 = 300, 300  # Center of the window
         x1 = x0 + scale * self.l1[index] * torch.sin(theta1).item()
         y1 = y0 + scale * self.l1[index] * torch.cos(theta1).item()
         x2 = x1 + scale * self.l2[index] * torch.sin(theta2).item()
         y2 = y1 + scale * self.l2[index] * torch.cos(theta2).item()
 
         # Create an empty canvas
-        canvas = np.zeros((600, 800, 3), dtype=np.uint8)
+        canvas = np.zeros((600, 600, 3), dtype=np.uint8)
 
         # Draw pendulum
         cv2.circle(canvas, (int(x0), int(y0)), 5, (0, 255, 0), -1)  # Origin
@@ -135,6 +129,4 @@ class DoublePendulum:
         cv2.line(canvas, (int(x0), int(y0)), (int(x1), int(y1)), (255, 255, 255), 2)  # Rod 1
         cv2.line(canvas, (int(x1), int(y1)), (int(x2), int(y2)), (255, 255, 255), 2)  # Rod 2
 
-        cv2.imshow('Double Pendulum', canvas)
-
-        key = cv2.waitKey(1)
+        return canvas

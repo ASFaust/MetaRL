@@ -29,12 +29,9 @@ class ActorNetworkLayer:
 
         if seed is not None:
             torch.manual_seed(seed)
-        #set weights to zero! lol this is possible because the learning rule can learn to set the weights to the right values even if they are initialized to zero
-        self.weights = torch.rand(input_dim, output_dim,
-                                  device=self.device) * 2 * weight_limit - weight_limit
-        self.weights = self.weights.repeat(self.batch_dim, 1, 1)
-        self.biases = torch.zeros(self.batch_dim, output_dim, device=self.device)
-        self.sigmas = torch.ones(self.batch_dim, output_dim, device=self.device) * sigma_init
+        self.weights = torch.zeros(self.batch_dim,input_dim, output_dim,device = self.device) #* 2 * weight_limit - weight_limit
+        self.biases = torch.zeros(self.batch_dim, output_dim, device=self.device) #* 2 * weight_limit - weight_limit
+        self.sigmas = torch.zeros(self.batch_dim, output_dim, device=self.device) * sigma_init
 
         self.out_dim = output_dim
         self.in_dim = input_dim
@@ -66,15 +63,33 @@ class ActorNetworkLayer:
         #self.sum /= self.in_dim
 
         self.sum += self.biases
-        self.samples = torch.normal(self.sum, self.sigmas)
+        self.samples = self.sum #torch.normal(self.sum, self.sigmas)
         self.output = torch.tanh(self.samples)  # tanh or swish?
         return self.output
 
     def get_backward_info(self):
         # returns a tensor with shape (batch_dim, output_dim, 5) by stacking the tensors
         # maybe add sum of weights and sum of biases?
-        # and maybe add sum of sigmas?
-        return torch.stack([self.sum, self.samples, self.output, self.sigmas, self.biases], dim=2)
+        # add normalized index of neuron
+        # and log(number of connections)
+        same_info = torch.stack([self.sum, self.output, self.biases], dim=2)
+        # same_info has shape (batch_dim, output_dim, 3)
+        # now make index of neuron (batch_dim, output_dim, 1)
+        index = torch.arange(self.out_dim, device=self.device)
+        # to float
+        index = index.to(torch.float)
+        # normalize
+        index /= self.out_dim - 1
+        index = index[None, :, None]
+        index = index.repeat(self.batch_dim, 1, 1)
+        # now make log(number of connections) (batch_dim, output_dim, 1)
+        log_connections = torch.log(torch.tensor(self.in_dim, dtype=torch.float, device=self.device))
+        log_connections = log_connections[None, None, None]
+        log_connections = log_connections.repeat(self.batch_dim, self.out_dim, 1)
+        # now stack everything
+        backward_info = torch.cat([same_info, index, log_connections], dim=2)
+        # backward_info has shape (batch_dim, output_dim, 5)
+        return backward_info
 
     def backward(self, signal):
         # signal: (batch_dim, output_dim, signal_dim)
@@ -111,13 +126,13 @@ class ActorNetworkLayer:
         signal_bias = out[:, :, self.signal_dim]
         # has shape (batch_dim, output_dim)
         # the signal for the lambdas is the last entry
-        signal_sigma = out[:, :, self.signal_dim + 1]
+        #signal_sigma = out[:, :, self.signal_dim + 1]
 
         # now alter lambda and bias
 
-        self.sigmas = self.sigmas + signal_sigma
+        #self.sigmas = self.sigmas + signal_sigma * self.learning_rate
         #clip sigmas to [0,1]
-        self.sigmas = torch.clamp(self.sigmas, 0.0, self.sigma_limit)
+        #self.sigmas = torch.clamp(self.sigmas, 0.0, self.sigma_limit)
 
         self.biases = self.biases + signal_bias * self.learning_rate
         self.biases = torch.clamp(self.biases, -self.weight_limit, self.weight_limit)

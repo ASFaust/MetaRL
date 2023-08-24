@@ -92,3 +92,10 @@ class ActorNetwork:
         for layer in self.layers:
             layer.reset() #necessary because the learning rule is stateful
         self.reward_network_state = self.learning_rule.reward_network.get_zero_state(self.output_dim)
+
+    def get_params(self):
+        #sigmas,biases and weights from all layers
+        params = []
+        for layer in self.layers:
+            params.append((layer.sigmas, layer.biases, layer.weights))
+        return params
