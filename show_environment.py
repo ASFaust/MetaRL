@@ -8,7 +8,8 @@ from utils import Config
 env = get_env(Config({
     "env_name": sys.argv[1],
     "population_size": 1,
-    "device": 'cpu'
+    "device": 'cpu',
+    "reward_type": 'height'
 }))
 
 for i in range(10000):
@@ -16,3 +17,4 @@ for i in range(10000):
     img = env.render(0,100)
     cv2.imshow('img', img)
     cv2.waitKey(1)
+    
