@@ -44,7 +44,7 @@ class ActorNetworkLayer:
         self.node_network_state = None
         self.connection_network_state = None
 
-        self.backward_info_dim = 5
+        self.node_info_dim = 5
         self.signal_dim = 1
 
         self.reset()
@@ -65,10 +65,10 @@ class ActorNetworkLayer:
         self.output = torch.tanh(self.samples)  # tanh or swish?
         return self.output
 
-    def get_backward_info(self):
+    def get_node_info(self):
         # returns a tensor with shape (batch_dim, output_dim, 5) by stacking the tensors
-        backward_info = torch.stack([self.sum, self.samples, self.output, self.biases, self.sigmas], dim=2)
-        return backward_info
+        node_info = torch.stack([self.sum, self.samples, self.output, self.biases, self.sigmas], dim=2)
+        return node_info
 
     def backward(self, signal, last_input = None):
         # signal: (batch_dim, output_dim, signal_dim)
@@ -81,7 +81,7 @@ class ActorNetworkLayer:
         # along the batch dim, we need to use different entries of self.learning_rules:
         # for batch dim = 0, we use self.learning_rules[0] etc.
 
-        node_input = torch.cat([self.get_backward_info(), signal], dim=2)
+        node_input = torch.cat([self.get_node_info(), signal], dim=2)
 
         # should have shape (batch_dim,output_dim, (5 + signal_dim))
         # one set of weights of the node network is used for [0,:,:], another for [1,:,:] etc.
@@ -114,23 +114,23 @@ class ActorNetworkLayer:
         # clip biases to [-weight_limit, weight_limit]
         self.biases = torch.clamp(self.biases, -self.weight_limit, self.weight_limit)
 
-        backward_info = self.get_backward_info()[:, None, :, :]
-        backward_info = backward_info.expand(-1, self.in_dim, -1, -1)
+        node_info = self.get_node_info()[:, None, :, :]
+        node_info = node_info.expand(-1, self.in_dim, -1, -1)
 
         if last_input is None:
 
             flag_previous_layer = torch.zeros(self.batch_dim, self.in_dim, self.out_dim, 1, device=self.device)
-            prev_backward_info = self.previous_layer.get_backward_info()[:, :, None, :]
-            prev_backward_info = prev_backward_info.expand(-1, -1, self.out_dim, -1)
+            prev_node_info = self.previous_layer.get_node_info()[:, :, None, :]
+            prev_node_info = prev_node_info.expand(-1, -1, self.out_dim, -1)
 
         else:
             flag_previous_layer = torch.ones(self.batch_dim, self.in_dim, self.out_dim, 1, device=self.device)
-            prev_backward_info = torch.zeros(self.batch_dim, self.in_dim, self.out_dim, self.backward_info_dim,
+            prev_node_info = torch.zeros(self.batch_dim, self.in_dim, self.out_dim, self.node_info_dim,
                                              device=self.device)
             #last_input has shape (batch_dim, input_dim)
             #output of last layer gets filled with last_input. can be dangerous if last_input magnitude is significantly
             #larger than [-1,1]
-            prev_backward_info[:, :, :, 2] = last_input[:, None, :]
+            prev_node_info[:, :, :, 2] = last_input[:, :, None]
 
         signal_connections = signal_connections[:, None, :, :]
         signal_connections = signal_connections.expand(-1, self.in_dim, -1, -1)
@@ -138,9 +138,9 @@ class ActorNetworkLayer:
         weight_info = self.weights[:, :, :, None]
 
         connection_input = torch.cat(
-            [backward_info, prev_backward_info, signal_connections, weight_info, flag_previous_layer], dim=3)
-        # connection_input has shape (batch_dim, input_dim, output_dim, self.backward_info_dim * 2 + 1 + signal_dim)
-        # reshape it to (batch_dim, input_dim * output_dim, self.backward_info_dim * 2 + 1 + signal_dim)
+            [node_info, prev_node_info, signal_connections, weight_info, flag_previous_layer], dim=3)
+        # connection_input has shape (batch_dim, input_dim, output_dim, self.node_info_dim * 2 + 1 + signal_dim)
+        # reshape it to (batch_dim, input_dim * output_dim, self.node_info_dim * 2 + 1 + signal_dim)
         connection_input = connection_input.reshape(self.batch_dim, self.in_dim * self.out_dim, -1)
         # now we pass it through the connection network
         out, self.connection_network_state = self.learning_rule.connection_network.forward(connection_input,self.connection_network_state)

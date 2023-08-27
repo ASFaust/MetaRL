@@ -1,11 +1,11 @@
 # Global Parameters
-device: 'cuda'
+device: 'cpu'
 seed: null #if a seed neq null is given, the run is deterministic
 
 # Genetic Algorithm parameters
-population_size: 10000
-num_survivors: 200
-num_eval_steps: 2000
+population_size: 10
+num_survivors: 2
+num_eval_steps: 20
 evals_per_gen: 1 #to average over multiple evaluations might give a more stable fitness
 mutation_probability: 0.01
 mutation_strength: 1.0
@@ -16,7 +16,7 @@ state_dim: 8 #dimension of the recurrent states of the 3 learning rule networks
 init_std: 0.1 #initial standard deviation of the weights of the learning rule networks, for population initialization
 
 # Environment parameters
-env_name: 'DoublePendulum'
+env_name: 'Pendulum'
 env_step_size: 0.05
 env_dynamics: 'RK4'
 
@@ -25,7 +25,7 @@ env_dynamics: 'RK4'
 # double pendulum: 6
 # pendulum: 3
 # the actor network is fully connected with the given shape
-network_shape: [6, 8, 8, 1] # [input_dim, hidden_dim, ..., output_dim]
+network_shape: [3, 8, 8, 1] # [input_dim, hidden_dim, ..., output_dim]
 weight_limit: 4.0 # [-weight_limit, weight_limit] is the range of the weights
 weight_init: 1.0 #weights are normally distributed with mean 0 and std weight_init at the beginning of each evaluation
 sigma_limit: 1.0 #[0, sigma_limit] is the range of the standard deviation of the output sampling of the neurons

@@ -1,15 +1,11 @@
 import torch
+from environments import DoublePendulum, Pendulum
 
-def count_parameters(dictionary):
-    total_parameters = 0
-    for key1, sub_dict in dictionary.items():
-        for key2, tensor in sub_dict.items():
-            total_parameters += torch.prod(torch.tensor(tensor.shape[1:])).item()
-    return total_parameters
+def get_env(config):
+    if config.env == 'DoublePendulum':
+        return DoublePendulum(config.population_size, device=config.device)
+    elif config.env == 'Pendulum':
+        return Pendulum(config.population_size, device=config.device)
+    else:
+        raise NotImplementedError
 
-def flatten_params(params):
-    ret_list = []
-    for key1, sub_dict in params.items():
-        for key2, tensor in sub_dict.items():
-            ret_list.append(tensor.flatten())
-    return torch.cat(ret_list)

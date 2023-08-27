@@ -1,4 +1,4 @@
-from ActorNetworkLayer import ActorNetworkLayer
+from .ActorNetworkLayer import ActorNetworkLayer
 import torch
 
 class ActorNetwork:
@@ -6,10 +6,11 @@ class ActorNetwork:
             self,
             layer_dims,
             learning_rule,
-            weight_limit=2,
-            sigma_limit=1,
-            sigma_init=0.1,
-            learning_rate=0.1,
+            weight_limit,
+            weight_init,
+            sigma_limit,
+            sigma_init,
+            learning_rate,
             device='cuda',
             seed=None):
         #if seed is none, the parameters are initialized randomly, but the same for every batch
@@ -33,6 +34,7 @@ class ActorNetwork:
                     learning_rule,
                     previous_layer,
                     weight_limit,
+                    weight_init,
                     sigma_limit,
                     sigma_init,
                     learning_rate,
@@ -50,14 +52,14 @@ class ActorNetwork:
         out = x
         for layer in self.layers:
             out = layer.forward(out)
-        self.out = out
         return out
 
     def train(self, reward):
         #squeeze the reward to (batch_dim,)
-        reward = reward.unsqueeze(-1).expand(-1, self.output_dim)
-        reward_network_input = torch.cat((self.out.unsqueeze(2), reward.unsqueeze(2)), dim=2)
-        #now we have a tensor of shape (batch_dim, output_dim, 2)
+        reward = reward.unsqueeze(-1).expand(-1, self.output_dim)[:,:,None]
+        node_info = self.layers[-1].get_node_info()
+        #has shape (batch_dim, output_dim,  node_info_dim=5)
+        reward_network_input = torch.cat((reward, node_info), dim=-1)
         learning_signal, self.reward_network_state = self.learning_rule.reward_network.forward(reward_network_input, self.reward_network_state)
         #learning_signal now has shape (batch_dim, output_dim, signal_dim) (signal dim is 1 most of the time)
         #we now iterate over the layers backwards

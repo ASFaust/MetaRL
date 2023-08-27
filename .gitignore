@@ -166,4 +166,8 @@ cython_debug/
 *.pt
 
 #pycharm
-.idea/
+.idea
+
+#results folder and its contents
+results/
+results/*

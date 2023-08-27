@@ -28,8 +28,9 @@ class Pendulum:
         self.device = device
         self.batch_size = batch_size
         assert self.batch_size == self.l.shape[0] == self.m.shape[0] == self.g.shape[0], "batch_size must be the same for all parameters"
-        self.state = torch.zeros((self.batch_size, 2), device=device)  # [theta, omega]
-        self.state[:, 0] = torch.zeros((self.batch_size,), device=device) * np.pi * 1.00001
+        self.state = torch.ones((self.batch_size, 2), device=device)  # [theta, omega]
+        self.state[:, 0] = torch.ones((self.batch_size,), device=device) * np.pi * 1.00001
+        self.last_value = None
 
     def dynamics(self, state):
         theta, omega = state.T
@@ -54,7 +55,7 @@ class Pendulum:
         self.clamp_speed()
 
     def wrap_angles(self):
-        self.state[:, 0] = torch.fmod(self.state[:, 0], 2.0 * np.pi) - np.pi
+        self.state[:, 0] = (self.state[:, 0] + np.pi) % (2.0 * np.pi) - np.pi
 
     def clamp_speed(self, max_speed=10.0):
         self.state[:, 1] = torch.clamp(self.state[:, 1], -max_speed, max_speed)
@@ -68,6 +69,9 @@ class Pendulum:
     def get_reward(self):
         theta, omega = self.state.T
         value = (1.0 - torch.cos(theta))
+        if self.last_value is None:
+            self.last_value = value
+            return torch.zeros((self.batch_size,), device=self.device)
         reward = value - self.last_value
         reward[reward < 0] *= 1.1
         self.last_value = value

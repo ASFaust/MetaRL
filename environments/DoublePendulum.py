@@ -35,11 +35,11 @@ class DoublePendulum:
         self.batch_size = batch_size
         assert self.batch_size == self.l1.shape[0] == self.l2.shape[0] == self.m1.shape[0] == self.m2.shape[0] == self.g.shape[0], "batch_size must be the same for all parameters"
         self.state = torch.zeros((self.batch_size, 4), device=device)  # [theta1, omega1, theta2, omega2]
-        self.state[:,0] = torch.zeros((self.batch_size, ), device=device) * np.pi * 1.00001
-        self.state[:,2] = torch.zeros((self.batch_size, ), device=device) * np.pi
+        self.state[:,0] = torch.ones((self.batch_size, ), device=device) * np.pi * 1.00001
+        self.state[:,2] = torch.ones((self.batch_size, ), device=device) * np.pi
         self.waitkey = -1
         theta1, omega1, theta2, omega2 = self.state.T
-        self.last_value = 0
+        self.last_value = None
 
     def dynamics(self, state):
         theta1, omega1, theta2, omega2 = state.T
@@ -78,9 +78,8 @@ class DoublePendulum:
         self.clamp_speed()
 
     def wrap_angles(self):
-        # Wrap angles between 0 and 2pi
-        self.state[:, 0] = torch.fmod(self.state[:, 0], 2.0 * np.pi)
-        self.state[:, 2] = torch.fmod(self.state[:, 2], 2.0 * np.pi)
+        self.state[:, 0] = (self.state[:, 0] + np.pi) % (2.0 * np.pi) - np.pi
+        self.state[:, 2] = (self.state[:, 2] + np.pi) % (2.0 * np.pi) - np.pi
 
     def clamp_speed(self, max_speed = 10.0):
         # Clamp angular velocities
@@ -102,6 +101,9 @@ class DoublePendulum:
         #reward is the sum of the cosines of the angles minus the absolute value of the angular velocities
         theta1, omega1, theta2, omega2 = self.state.T
         value = (1.0 - torch.cos(theta1)) + (1.0 - torch.cos(theta2)) #- torch.abs(omega1) - torch.abs(omega2)
+        if self.last_value is None:
+            self.last_value = value
+            return torch.zeros((self.batch_size,), device=self.device)
         reward = value - self.last_value
         #make negative rewards
         reward[reward < 0] *= 1.1
