@@ -15,18 +15,23 @@ def create_population(config):
         config.device)
 
 def evaluate(params, config):
-    env = get_env(config)
     rewards = np.zeros(config.population_size)
-    actors = get_actor(params, config)
-    for i in range(config.num_eval_steps):
-        print("\rstep: {}/{}".format(i, config.num_eval_steps), end="", flush=True)
-        observations = env.get_state()
-        actions = actors.forward(observations) * config.actor_force
-        env.torque = actions.squeeze()
-        env.step_rk4(config.env_step_size)
-        reward = env.get_reward()
-        rewards += reward.cpu().numpy()
-        actors.train(reward)
+    step = 0
+    n_steps = config.num_eval_steps * config.evals_per_gen
+    for j in range(config.evals_per_gen):
+        env = get_env(config)
+        actors = get_actor(params, config)
+        for i in range(config.num_eval_steps):
+            step += 1
+            print("\rstep: {}/{}".format(step, n_steps), end="", flush=True)
+            observations = env.get_state()
+            actions = actors.forward(observations) * config.actor_force
+            env.torque = actions.squeeze()
+            env.step_rk4(config.env_step_size)
+            reward = env.get_reward()
+            rewards += reward.cpu().numpy()
+            actors.train(reward)
+    rewards /= config.evals_per_gen
     print("\ndone")
     indices = np.argsort(rewards)[::-1].copy()
     return indices, rewards

@@ -26,7 +26,7 @@ class DoublePendulum:
         damping = torch.rand((batch_size,), device=device) * (damping_max - damping_min) + damping_min
         return l1, l2, m1, m2, g, damping
 
-    def __init__(self, batch_size, params=None, device='cuda'):
+    def __init__(self, batch_size, params=None, reward_type='height', device='cuda'):
         if params is None:
             params = DoublePendulum.get_params(batch_size, device=device)
         self.l1, self.l2, self.m1, self.m2, self.g, self.damping = params
@@ -40,6 +40,10 @@ class DoublePendulum:
         self.waitkey = -1
         theta1, omega1, theta2, omega2 = self.state.T
         self.last_value = None
+        if reward_type == 'height':
+            self.get_reward = self.reward_height
+        elif reward_type == 'height_delta':
+            self.get_reward = self.reward_height_delta
 
     def dynamics(self, state):
         theta1, omega1, theta2, omega2 = state.T
@@ -97,7 +101,12 @@ class DoublePendulum:
         #this returns a tensor of shape (batch_size, 6) with the following columns:
         #sin(theta1), cos(theta1), omega1, sin(theta2), cos(theta2), omega2
 
-    def get_reward(self):
+    def reward_height(self):
+        theta1, omega1, theta2, omega2 = self.state.T
+        value = (1.0 - torch.cos(theta1)) + (1.0 - torch.cos(theta2)) #- torch.abs(omega1) - torch.abs(omega2)
+        return value
+
+    def reward_height_delta(self):
         #reward is the sum of the cosines of the angles minus the absolute value of the angular velocities
         theta1, omega1, theta2, omega2 = self.state.T
         value = (1.0 - torch.cos(theta1)) + (1.0 - torch.cos(theta2)) #- torch.abs(omega1) - torch.abs(omega2)

@@ -20,7 +20,7 @@ class Pendulum:
         damping = torch.rand((batch_size,), device=device) * (damping_max - damping_min) + damping_min
         return l, m, g, damping
 
-    def __init__(self, batch_size, params=None, device='cuda'):
+    def __init__(self, batch_size, params=None, reward_type="height", device='cuda'):
         if params is None:
             params = Pendulum.get_params(batch_size, device=device)
         self.l, self.m, self.g, self.damping = params
@@ -31,6 +31,10 @@ class Pendulum:
         self.state = torch.ones((self.batch_size, 2), device=device)  # [theta, omega]
         self.state[:, 0] = torch.ones((self.batch_size,), device=device) * np.pi * 1.00001
         self.last_value = None
+        if reward_type == "height":
+            self.get_reward = self.reward_height
+        if reward_type == "height_delta":
+            self.get_reward = self.reward_delta
 
     def dynamics(self, state):
         theta, omega = state.T
@@ -66,7 +70,11 @@ class Pendulum:
         cos_theta = torch.cos(theta)
         return torch.stack([sin_theta, cos_theta, omega], dim=1)
 
-    def get_reward(self):
+    def reward_height(self):
+        theta, omega = self.state.T
+        return 1.0 - torch.cos(theta)
+
+    def reward_height_delta(self):
         theta, omega = self.state.T
         value = (1.0 - torch.cos(theta))
         if self.last_value is None:
