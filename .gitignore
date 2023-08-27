@@ -169,7 +169,7 @@ cython_debug/
 .idea
 
 #results folder and its contents
-results/
 results/*
+
 #but keep the results folder and best_model.yaml
 !results/best_model.yaml
