@@ -1,0 +1,26 @@
+# Global Parameters
+device: 'cuda'
+seed: null #if a seed is given, the run is deterministic
+
+# Genetic Algorithm parameters
+population_size: 10000
+n_survivors: 200
+num_steps: 2000
+evals_per_gen: 1
+mutation_probability: 0.01
+mutation_strength: 1.0
+
+# Environment parameters
+env_name: 'Pendulum'
+env_step_size: 0.05
+env_dynamics: 'RK4'
+
+# ActorNetwork parameters
+network_shape: [6, 16, 8, 1] # [input_dim, hidden_dim, ..., output_dim]
+weight_limit: 4.0 # [-weight_limit, weight_limit] is the range of the weights
+sigma_limit: 1.0 #[0, sigma_limit] is the range of the standard deviation of the output sampling of the neurons
+sigma_init: 0.0 #Initial value of the standard deviation of the output sampling of the neurons
+learning_rate: 1.0 #maximal change of a weight in a step is [-learning_rate, learning_rate]
+
+# Actor force
+actor_force: 5  # [-1,1] * actor_force is the range of the force of the actor

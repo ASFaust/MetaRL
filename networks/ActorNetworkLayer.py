@@ -8,6 +8,7 @@ class ActorNetworkLayer:
             learning_rule,
             previous_layer,
             weight_limit,
+            weight_init,
             sigma_limit,
             sigma_init,
             learning_rate,
@@ -23,15 +24,12 @@ class ActorNetworkLayer:
 
         self.device = device
 
-
-        #the weights should be the same for every batch, but will be altered differently depending on the batch
-        #they should be initialized randomly, but the same for every batch, so that the results become comparable
-
         if seed is not None:
             torch.manual_seed(seed)
-        self.weights = torch.zeros(self.batch_dim,input_dim, output_dim,device = self.device) #* 2 * weight_limit - weight_limit
-        self.biases = torch.zeros(self.batch_dim, output_dim, device=self.device) #* 2 * weight_limit - weight_limit
-        self.sigmas = torch.zeros(self.batch_dim, output_dim, device=self.device) * sigma_init
+        weight_range = weight_init * weight_limit
+        self.weights = torch.randn((self.batch_dim, input_dim, output_dim), device=self.device) * weight_range
+        self.biases = torch.randn(self.batch_dim, output_dim, device=self.device) * weight_range
+        self.sigmas = torch.ones(self.batch_dim, output_dim, device=self.device) * sigma_init
 
         self.out_dim = output_dim
         self.in_dim = input_dim
@@ -63,35 +61,16 @@ class ActorNetworkLayer:
         #self.sum /= self.in_dim
 
         self.sum += self.biases
-        self.samples = self.sum #torch.normal(self.sum, self.sigmas)
+        self.samples = torch.normal(self.sum, self.sigmas)
         self.output = torch.tanh(self.samples)  # tanh or swish?
         return self.output
 
     def get_backward_info(self):
         # returns a tensor with shape (batch_dim, output_dim, 5) by stacking the tensors
-        # maybe add sum of weights and sum of biases?
-        # add normalized index of neuron
-        # and log(number of connections)
-        same_info = torch.stack([self.sum, self.output, self.biases], dim=2)
-        # same_info has shape (batch_dim, output_dim, 3)
-        # now make index of neuron (batch_dim, output_dim, 1)
-        index = torch.arange(self.out_dim, device=self.device)
-        # to float
-        index = index.to(torch.float)
-        # normalize
-        index /= self.out_dim - 1
-        index = index[None, :, None]
-        index = index.repeat(self.batch_dim, 1, 1)
-        # now make log(number of connections) (batch_dim, output_dim, 1)
-        log_connections = torch.log(torch.tensor(self.in_dim, dtype=torch.float, device=self.device))
-        log_connections = log_connections[None, None, None]
-        log_connections = log_connections.repeat(self.batch_dim, self.out_dim, 1)
-        # now stack everything
-        backward_info = torch.cat([same_info, index, log_connections], dim=2)
-        # backward_info has shape (batch_dim, output_dim, 5)
+        backward_info = torch.stack([self.sum, self.samples, self.output, self.biases, self.sigmas], dim=2)
         return backward_info
 
-    def backward(self, signal):
+    def backward(self, signal, last_input = None):
         # signal: (batch_dim, output_dim, signal_dim)
         # signal is the learning signal from the next layer
         # it is already accumulated over the connections.
@@ -102,9 +81,6 @@ class ActorNetworkLayer:
         # along the batch dim, we need to use different entries of self.learning_rules:
         # for batch dim = 0, we use self.learning_rules[0] etc.
 
-        # can we vectorize this?
-
-        # self.learning_rules[0].node_network(self.output, signal)
         node_input = torch.cat([self.get_backward_info(), signal], dim=2)
 
         # should have shape (batch_dim,output_dim, (5 + signal_dim))
@@ -126,32 +102,35 @@ class ActorNetworkLayer:
         signal_bias = out[:, :, self.signal_dim]
         # has shape (batch_dim, output_dim)
         # the signal for the lambdas is the last entry
-        #signal_sigma = out[:, :, self.signal_dim + 1]
+        signal_sigma = out[:, :, self.signal_dim + 1]
 
         # now alter lambda and bias
 
-        #self.sigmas = self.sigmas + signal_sigma * self.learning_rate
-        #clip sigmas to [0,1]
-        #self.sigmas = torch.clamp(self.sigmas, 0.0, self.sigma_limit)
+        self.sigmas = self.sigmas + signal_sigma * self.learning_rate
+        # clip sigmas to [0, sigma_limit]
+        self.sigmas = torch.clamp(self.sigmas, 0.0, self.sigma_limit)
 
         self.biases = self.biases + signal_bias * self.learning_rate
+        # clip biases to [-weight_limit, weight_limit]
         self.biases = torch.clamp(self.biases, -self.weight_limit, self.weight_limit)
-
-        # clip sigmas to [0,1]
-
-        # clip biases to [-1,1]
 
         backward_info = self.get_backward_info()[:, None, :, :]
         backward_info = backward_info.expand(-1, self.in_dim, -1, -1)
 
-        if self.previous_layer is None:
-            flag_previous_layer = torch.ones(self.batch_dim, self.in_dim, self.out_dim, 1, device=self.device)
-            prev_backward_info = torch.zeros(self.batch_dim, self.in_dim, self.out_dim, self.backward_info_dim,
-                                             device=self.device)
-        else:
+        if last_input is None:
+
             flag_previous_layer = torch.zeros(self.batch_dim, self.in_dim, self.out_dim, 1, device=self.device)
             prev_backward_info = self.previous_layer.get_backward_info()[:, :, None, :]
             prev_backward_info = prev_backward_info.expand(-1, -1, self.out_dim, -1)
+
+        else:
+            flag_previous_layer = torch.ones(self.batch_dim, self.in_dim, self.out_dim, 1, device=self.device)
+            prev_backward_info = torch.zeros(self.batch_dim, self.in_dim, self.out_dim, self.backward_info_dim,
+                                             device=self.device)
+            #last_input has shape (batch_dim, input_dim)
+            #output of last layer gets filled with last_input. can be dangerous if last_input magnitude is significantly
+            #larger than [-1,1]
+            prev_backward_info[:, :, :, 2] = last_input[:, None, :]
 
         signal_connections = signal_connections[:, None, :, :]
         signal_connections = signal_connections.expand(-1, self.in_dim, -1, -1)

@@ -3,6 +3,29 @@ import cv2
 import numpy as np
 
 class DoublePendulum:
+    @staticmethod
+    def get_params(batch_size,
+                   l1_min=1.0,
+                   l1_max=1.0,
+                   l2_min=1.0,
+                   l2_max=1.0,
+                   m1_min=1.0,
+                   m1_max=1.0,
+                   m2_min=1.0,
+                   m2_max=1.0,
+                   g_min=9.81,
+                   g_max=9.81,
+                   damping_min=0.1,
+                   damping_max=0.1,
+                   device='cuda'):
+        l1 = torch.rand((batch_size,), device=device) * (l1_max - l1_min) + l1_min
+        l2 = torch.rand((batch_size,), device=device) * (l2_max - l2_min) + l2_min
+        m1 = torch.rand((batch_size,), device=device) * (m1_max - m1_min) + m1_min
+        m2 = torch.rand((batch_size,), device=device) * (m2_max - m2_min) + m2_min
+        g = torch.rand((batch_size,), device=device) * (g_max - g_min) + g_min
+        damping = torch.rand((batch_size,), device=device) * (damping_max - damping_min) + damping_min
+        return l1, l2, m1, m2, g, damping
+
     def __init__(self, batch_size, params=None, device='cuda'):
         if params is None:
             params = DoublePendulum.get_params(batch_size, device=device)
@@ -17,29 +40,6 @@ class DoublePendulum:
         self.waitkey = -1
         theta1, omega1, theta2, omega2 = self.state.T
         self.last_value = 0
-
-    @staticmethod
-    def get_params(batch_size,
-                   l1_min = 1.0,
-                   l1_max = 1.0,
-                   l2_min = 1.0,
-                   l2_max = 1.0,
-                   m1_min = 1.0,
-                   m1_max = 1.0,
-                   m2_min = 1.0,
-                   m2_max = 1.0,
-                   g_min = 9.81,
-                   g_max = 9.81,
-                   damping_min = 0.1,
-                   damping_max = 0.1,
-                   device='cuda'):
-        l1 = torch.rand((batch_size, ), device=device) * (l1_max - l1_min) + l1_min
-        l2 = torch.rand((batch_size, ), device=device) * (l2_max - l2_min) + l2_min
-        m1 = torch.rand((batch_size, ), device=device) * (m1_max - m1_min) + m1_min
-        m2 = torch.rand((batch_size, ), device=device) * (m2_max - m2_min) + m2_min
-        g = torch.rand((batch_size, ), device=device) * (g_max - g_min) + g_min
-        damping = torch.rand((batch_size, ), device=device) * (damping_max - damping_min) + damping_min
-        return l1, l2, m1, m2, g, damping
 
     def dynamics(self, state):
         theta1, omega1, theta2, omega2 = state.T

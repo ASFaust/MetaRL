@@ -1,21 +1,6 @@
 from ActorNetworkLayer import ActorNetworkLayer
 import torch
 
-"""
-Actornetworklayer:
-self,
-            input_dim,
-            output_dim,
-            learning_rule,
-            previous_layer,
-            weight_limit,
-            sigma_limit,
-            sigma_init,
-            learning_rate,
-            device='cuda',
-            seed=None
-"""
-
 class ActorNetwork:
     def __init__(
             self,
@@ -61,6 +46,7 @@ class ActorNetwork:
         self.device = device
 
     def forward(self, x):
+        self.last_input = x
         out = x
         for layer in self.layers:
             out = layer.forward(out)
@@ -69,13 +55,8 @@ class ActorNetwork:
 
     def train(self, reward):
         #squeeze the reward to (batch_dim,)
-        reward = reward.squeeze()
-        #self.out has shape (batch_dim, output_dim)
-        #repeat reward along the second dimension to (batch_dim, output_dim)
-        reward = reward.unsqueeze(-1)
-        reward = reward.repeat(1, self.output_dim)
-        reward = reward.unsqueeze(2)
-        reward_network_input = torch.cat((self.out.unsqueeze(2), reward), dim=2)
+        reward = reward.unsqueeze(-1).expand(-1, self.output_dim)
+        reward_network_input = torch.cat((self.out.unsqueeze(2), reward.unsqueeze(2)), dim=2)
         #now we have a tensor of shape (batch_dim, output_dim, 2)
         learning_signal, self.reward_network_state = self.learning_rule.reward_network.forward(reward_network_input, self.reward_network_state)
         #learning_signal now has shape (batch_dim, output_dim, signal_dim) (signal dim is 1 most of the time)
@@ -84,9 +65,11 @@ class ActorNetwork:
         #the other layers get the learning signal and the output of the previous layer as input
         #the last layer gets the output of the previous layer as input
         #the first layer gets the output of the previous layer as input
-        for i in range(len(self.layers) - 1,-1,-1):
+        for i in range(len(self.layers) - 1,0,-1):
             layer = self.layers[i]
             learning_signal = layer.backward(learning_signal)
+        #last layer gets passed the input and we ignore the learning signal
+        self.layers[0].backward(learning_signal, self.last_input)
 
     def reset(self):
         for layer in self.layers:
