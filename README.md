@@ -13,3 +13,15 @@ For training, the actor network uses a backward pass that feeds information thro
 The networks and pendulum are implemented in pytorch to allow for massive GPU acceleration.
 
 10k individuals only take up around 500MB VRAM.
+
+## Requirements
+```
+pip install -r requirements.txt
+```
+
+## Usage
+To show the environments:
+```
+python3 show_environment.py Pendulum
+python3 show_environment.py DoublePendulum
+```

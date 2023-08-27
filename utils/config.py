@@ -8,11 +8,11 @@ class Config:
             data = yaml.safe_load(f)
         data['path'] = path
         #format the timestamp as YYYY-MM-DD_HH:MM:SS
-        data['timestamp'] = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         return Config(data)
 
     def __init__(self, data):
         self._set_attributes(data)
+        self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
     def _set_attributes(self, data, prefix=None):
         for key, value in data.items():

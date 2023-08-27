@@ -7,4 +7,4 @@ def get_env(config):
     elif config.env_name == 'Pendulum':
         return Pendulum(config.population_size, device=config.device)
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Unknown environment: {config.env_name}")
