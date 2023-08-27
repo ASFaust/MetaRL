@@ -25,3 +25,13 @@ To show the environments:
 python3 show_environment.py Pendulum
 python3 show_environment.py DoublePendulum
 ```
+
+To train the actor network:
+```
+python3 run_config.py configs/base.yaml
+```
+
+To show results of training:
+```
+python3 show_results.py results/best_model.yaml
+```
