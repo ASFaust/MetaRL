@@ -12,8 +12,9 @@ class ActorNetworkLayer:
             sigma_limit,
             sigma_init,
             learning_rate,
-            device='cuda',
-            seed=None
+            device,
+            seed,
+            signal_dim
             ):
         self.learning_rule = learning_rule
         self.batch_dim = learning_rule.batch_dim
@@ -45,7 +46,7 @@ class ActorNetworkLayer:
         self.connection_network_state = None
 
         self.node_info_dim = 5
-        self.signal_dim = 1
+        self.signal_dim = signal_dim
 
         self.reset()
 
@@ -101,10 +102,10 @@ class ActorNetworkLayer:
         # the signal for the biases is the next entry
         signal_bias = out[:, :, self.signal_dim]
         # has shape (batch_dim, output_dim)
-        # the signal for the lambdas is the last entry
+        # the signal for the sigmas is the last entry
         signal_sigma = out[:, :, self.signal_dim + 1]
 
-        # now alter lambda and bias
+        # now alter sigmas and biases
 
         self.sigmas = self.sigmas + signal_sigma * self.learning_rate
         # clip sigmas to [0, sigma_limit]

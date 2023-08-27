@@ -1,0 +1,39 @@
+# Global Parameters
+device: 'cpu'
+seed: null #if a seed neq null is given, the run is deterministic
+
+# Genetic Algorithm parameters
+population_size: 100
+num_survivors: 2
+num_eval_steps: 100
+evals_per_gen: 2 #to average over multiple evaluations might give a more stable fitness
+mutation_probability: 0.001
+mutation_strength: 0.1
+
+#learning rule parameters
+signal_dim: 3 #dimension of the backwards learning signal
+state_dim: 8 #dimension of the recurrent states of the 3 learning rule networks
+init_std: 0.1 #initial standard deviation of the weights of the learning rule networks, for population initialization
+
+# Environment parameters
+env_name: Pendulum
+env_step_size: 0.05
+env_dynamics: RK4
+reward_type: height #height or height_delta. height_delta returns the change in height since the last step, but penalizes swingdowns, while height returns the height of the pendulum at the moment of evaluation
+
+# ActorNetwork parameters
+# the environments have different input dimensionalities:
+# double pendulum: 6
+# pendulum: 3
+# the actor network is fully connected with the given shape
+network_shape: [3, 8, 8, 1] # [input_dim, hidden_dim, ..., output_dim]
+weight_limit: 4.0 # [-weight_limit, weight_limit] is the range of the weights
+weight_init: 0.1 #weights are normally distributed with mean 0 and std weight_init*weight_limit at the beginning of each evaluation
+sigma_limit: 1.0 #[0, sigma_limit] is the range of the standard deviation of the output sampling of the neurons
+sigma_init: 0.0 #Initial value of the standard deviation of the output sampling of the neurons
+learning_rate: 1 #maximal change of a weight in a step is [-learning_rate, learning_rate]
+
+node_info_dim: 5 #magic number, do not change. corresponds to the number of values in actornetworklayer.get_node_info()
+
+actor_force: 1  # [-1,1] * actor_force is the range of the force of the actor
+

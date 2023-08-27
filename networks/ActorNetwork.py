@@ -11,8 +11,9 @@ class ActorNetwork:
             sigma_limit,
             sigma_init,
             learning_rate,
-            device='cuda',
-            seed=None):
+            device,
+            seed,
+            signal_dim):
         #if seed is none, the parameters are initialized randomly, but the same for every batch
         #if seed is not none, the parameters are initialized randomly, still the same for every batch, but according to the seed
         self.input_dim = layer_dims[0]
@@ -39,11 +40,12 @@ class ActorNetwork:
                     sigma_init,
                     learning_rate,
                     device,
-                    current_seed
+                    current_seed,
+                    signal_dim
             ))
             if seed is not None:
                 current_seed += 1
-        self.out = None
+        self.last_input = None
         self.reward_network_state = self.learning_rule.reward_network.get_zero_state(self.output_dim)
         self.device = device
 

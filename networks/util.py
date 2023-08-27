@@ -24,6 +24,7 @@ def get_actor(params,config):
         sigma_init=config.sigma_init,
         learning_rate=config.learning_rate,
         device=config.device,
-        seed=config.seed
+        seed=config.seed,
+        signal_dim=config.signal_dim
     )
 
