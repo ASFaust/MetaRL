@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+
 class LearningRuleNetwork:
     @staticmethod
     def get_random_params(batch_dim, input_dim, output_dim, state_dim, std, device='cuda'):
@@ -10,7 +11,8 @@ class LearningRuleNetwork:
         if state_dim > 0:
             w_state = torch.randn(batch_dim, input_dim + state_dim, state_dim, device=device) * std
             b_state = torch.randn(batch_dim, state_dim, device=device) * std
-            return {"w_state": w_state, "b_state": b_state, "w_output": w_output, "b_output": b_output, "state_dim": state_dim}
+            return {"w_state": w_state, "b_state": b_state, "w_output": w_output, "b_output": b_output,
+                    "state_dim": state_dim}
         else:
             return {"w_output": w_output, "b_output": b_output, "state_dim": state_dim}
 
@@ -51,7 +53,7 @@ class LearningRuleNetwork:
         matmul = torch.einsum('bsi,bio->bso', (x, w))
         return matmul + b.unsqueeze(1)
 
-    #dont count batch dim in count_params. prod shape[1:]!
+    # dont count batch dim in count_params. prod shape[1:]!
     def count_params(self):
-        return np.prod(self.w_state.shape[1:]) + np.prod(self.b_state.shape[1:]) + np.prod(self.w_output.shape[1:]) + np.prod(self.b_output.shape[1:])
-
+        return np.prod(self.w_state.shape[1:]) + np.prod(self.b_state.shape[1:]) + np.prod(
+            self.w_output.shape[1:]) + np.prod(self.b_output.shape[1:])

@@ -1,5 +1,6 @@
 import torch
 
+
 class ActorNetworkLayer:
     def __init__(
             self,
@@ -9,7 +10,7 @@ class ActorNetworkLayer:
             previous_layer,
             seed,
             config
-            ):
+    ):
         self.learning_rule = learning_rule
         self.batch_dim = learning_rule.batch_dim
         self.learning_rate = config.learning_rate
@@ -53,7 +54,7 @@ class ActorNetworkLayer:
         # self.weights has shape (batch_dim, input_dim, output_dim)
 
         self.sum = torch.einsum('bi,bio->bo', x, self.weights)
-        #self.sum /= self.in_dim
+        # self.sum /= self.in_dim
 
         self.sum += self.biases
         self.samples = torch.normal(self.sum, self.sigmas)
@@ -65,7 +66,7 @@ class ActorNetworkLayer:
         node_info = torch.stack([self.sum, self.samples, self.output, self.biases, self.sigmas], dim=2)
         return node_info
 
-    def backward(self, signal, last_input = None):
+    def backward(self, signal, last_input=None):
         # signal: (batch_dim, output_dim, signal_dim)
         # signal is the learning signal from the next layer
         # it is already accumulated over the connections.
@@ -121,10 +122,11 @@ class ActorNetworkLayer:
         else:
             flag_previous_layer = torch.ones(self.batch_dim, self.in_dim, self.out_dim, 1, device=self.device)
             prev_node_info = torch.zeros(self.batch_dim, self.in_dim, self.out_dim, self.node_info_dim,
-                                             device=self.device)
-            #last_input has shape (batch_dim, input_dim)
-            #output of last layer gets filled with last_input. can be dangerous if last_input magnitude is significantly
-            #larger than [-1,1]
+                                         device=self.device)
+            # last_input has shape (batch_dim, input_dim)
+            # output of last layer gets filled with last_input.
+            # can be dangerous if last_input magnitude is significantly
+            # larger than [-1,1]
             prev_node_info[:, :, :, 2] = last_input[:, :, None]
 
         signal_connections = signal_connections[:, None, :, :]
@@ -138,11 +140,12 @@ class ActorNetworkLayer:
         # reshape it to (batch_dim, input_dim * output_dim, self.node_info_dim * 2 + 1 + signal_dim)
         connection_input = connection_input.reshape(self.batch_dim, self.in_dim * self.out_dim, -1)
         # now we pass it through the connection network
-        out, self.connection_network_state = self.learning_rule.connection_network.forward(connection_input,self.connection_network_state)
+        out, self.connection_network_state = self.learning_rule.connection_network.forward(connection_input,
+                                                                                           self.connection_network_state)
         # out has shape (batch_dim, output_dim * input_dim, signal_dim + 1),
         # where + 1 is finally the weight update signal
         # reshape it to (batch_dim, output_dim, input_dim, signal_dim + 1)
-        out = out.reshape(self.batch_dim, self.in_dim, self.out_dim,  -1)
+        out = out.reshape(self.batch_dim, self.in_dim, self.out_dim, -1)
         # so we split it into two parts
 
         # the first part is the signal for the next layer
