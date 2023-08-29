@@ -6,14 +6,7 @@ class ActorNetwork:
             self,
             layer_dims,
             learning_rule,
-            weight_limit,
-            weight_init,
-            sigma_limit,
-            sigma_init,
-            learning_rate,
-            device,
-            seed,
-            signal_dim):
+            config):
         #if seed is none, the parameters are initialized randomly, but the same for every batch
         #if seed is not none, the parameters are initialized randomly, still the same for every batch, but according to the seed
         self.input_dim = layer_dims[0]
@@ -21,8 +14,8 @@ class ActorNetwork:
         self.learning_rule = learning_rule
         self.batch_dim = learning_rule.batch_dim
         self.layers = []
-        current_seed = seed
-        for i in range(1,len(layer_dims)):
+        current_seed = config.seed
+        for i in range(1, len(layer_dims)):
             input_dim = layer_dims[i-1]
             output_dim = layer_dims[i]
             if i == 1:
@@ -34,20 +27,14 @@ class ActorNetwork:
                     output_dim,
                     learning_rule,
                     previous_layer,
-                    weight_limit,
-                    weight_init,
-                    sigma_limit,
-                    sigma_init,
-                    learning_rate,
-                    device,
                     current_seed,
-                    signal_dim
+                    config
             ))
-            if seed is not None:
+            if config.seed is not None:
                 current_seed += 1
         self.last_input = None
         self.reward_network_state = self.learning_rule.reward_network.get_zero_state(self.output_dim)
-        self.device = device
+        self.device = config.device
 
     def forward(self, x):
         self.last_input = x
@@ -75,14 +62,4 @@ class ActorNetwork:
         #last layer gets passed the input and we ignore the learning signal
         self.layers[0].backward(learning_signal, self.last_input)
 
-    def reset(self):
-        for layer in self.layers:
-            layer.reset() #necessary because the learning rule is stateful
-        self.reward_network_state = self.learning_rule.reward_network.get_zero_state(self.output_dim)
 
-    def get_params(self):
-        #sigmas,biases and weights from all layers
-        params = []
-        for layer in self.layers:
-            params.append((layer.sigmas, layer.biases, layer.weights))
-        return params

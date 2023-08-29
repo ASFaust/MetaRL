@@ -3,12 +3,13 @@ device: 'cpu'
 seed: null #if a seed neq null is given, the run is deterministic
 
 # Genetic Algorithm parameters
-population_size: 100
+population_size: 10
 num_survivors: 2
-num_eval_steps: 100
+num_eval_steps: 10
 evals_per_gen: 2 #to average over multiple evaluations might give a more stable fitness
 mutation_probability: 0.001
 mutation_strength: 0.1
+generations: 1
 
 #learning rule parameters
 signal_dim: 3 #dimension of the backwards learning signal

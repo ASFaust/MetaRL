@@ -21,7 +21,7 @@ config.device = 'cpu'
 for network in all_info["actor"].keys():
     for param in all_info["actor"][network].keys():
         #convert to tensors
-        all_info["actor"][network][param] = torch.tensor(all_info["actor"][network][param]).unsqueeze(0)
+        all_info["actor"][network][param] = torch.tensor(all_info["actor"][network][param])
 
 while True:
     actor = get_actor(all_info["actor"], config)

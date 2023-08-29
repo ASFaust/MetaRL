@@ -7,30 +7,24 @@ class ActorNetworkLayer:
             output_dim,
             learning_rule,
             previous_layer,
-            weight_limit,
-            weight_init,
-            sigma_limit,
-            sigma_init,
-            learning_rate,
-            device,
             seed,
-            signal_dim
+            config
             ):
         self.learning_rule = learning_rule
         self.batch_dim = learning_rule.batch_dim
-        self.learning_rate = learning_rate
+        self.learning_rate = config.learning_rate
 
-        self.weight_limit = weight_limit
-        self.sigma_limit = sigma_limit
+        self.weight_limit = config.weight_limit
+        self.sigma_limit = config.sigma_limit
 
-        self.device = device
+        self.device = config.device
 
         if seed is not None:
             torch.manual_seed(seed)
-        weight_range = weight_init * weight_limit
+        weight_range = config.weight_init * config.weight_limit
         self.weights = torch.randn((self.batch_dim, input_dim, output_dim), device=self.device) * weight_range
         self.biases = torch.randn(self.batch_dim, output_dim, device=self.device) * weight_range
-        self.sigmas = torch.ones(self.batch_dim, output_dim, device=self.device) * sigma_init
+        self.sigmas = torch.ones(self.batch_dim, output_dim, device=self.device) * config.sigma_init
 
         self.out_dim = output_dim
         self.in_dim = input_dim
@@ -45,8 +39,8 @@ class ActorNetworkLayer:
         self.node_network_state = None
         self.connection_network_state = None
 
-        self.node_info_dim = 5
-        self.signal_dim = signal_dim
+        self.node_info_dim = config.node_info_dim
+        self.signal_dim = config.signal_dim
 
         self.reset()
 

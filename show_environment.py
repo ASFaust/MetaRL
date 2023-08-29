@@ -12,8 +12,10 @@ env = get_env(Config({
     "reward_type": 'height'
 }))
 
+env.force = torch.tensor([0.0])
+
 for i in range(10000):
-    env.step_rk4(0.01)
+    env.step_euler(0.01)
     img = env.render(0,100)
     cv2.imshow('img', img)
     cv2.waitKey(1)

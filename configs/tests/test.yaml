@@ -9,6 +9,7 @@ num_eval_steps: 20
 evals_per_gen: 1 #to average over multiple evaluations might give a more stable fitness
 mutation_probability: 0.01
 mutation_strength: 1.0
+generations: 1
 
 #learning rule parameters
 signal_dim: 1 #dimension of the backwards learning signal
@@ -19,6 +20,7 @@ init_std: 0.1 #initial standard deviation of the weights of the learning rule ne
 env_name: 'Pendulum'
 env_step_size: 0.05
 env_dynamics: 'RK4'
+reward_type: 'height' #height or height_delta. height_delta returns the change in height since the last step, but penalizes swingdowns, while height returns the height of the pendulum at the moment of evaluation
 
 # ActorNetwork parameters
 # the environments have different input dimensionalities:

@@ -9,6 +9,7 @@ num_eval_steps: 2000
 evals_per_gen: 1 #to average over multiple evaluations might give a more stable fitness
 mutation_probability: 0.001
 mutation_strength: 0.1
+generations: 10000
 
 #learning rule parameters
 signal_dim: 1 #dimension of the backwards learning signal

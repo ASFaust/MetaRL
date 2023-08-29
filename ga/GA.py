@@ -49,7 +49,13 @@ def select_inidviduals(population, indices):
     for network in population.keys():
         ret[network] = {}
         for param in population[network].keys():
-            ret[network][param] = population[network][param][indices].clone()
+            param_type = type(population[network][param])
+            if param_type == torch.Tensor:
+                ret[network][param] = population[network][param][indices].clone()
+            elif param_type == type(0):
+                ret[network][param] = population[network][param]
+            else:
+                raise Exception("unknown param type: {}".format(param_type))
     return ret
 
 def mutate_tensor(tensor, config):
@@ -80,6 +86,9 @@ def create_new_population(population, fitnesses, config):
     for network in survivors.keys():
         mutated[network] = {}
         for param in survivors[network].keys():
+            if type(survivors[network][param]) == type(0):
+                mutated[network][param] = survivors[network][param]
+                continue
             #survivors[network][param]: of dim (num_survivors, ...)
             #mutated[network][param]: of dim (population_size, ...)
             #what we want to do is to copy the survivors to the mutated population, by repeating the survivors until we reach the population size
@@ -97,11 +106,17 @@ def create_new_population(population, fitnesses, config):
 
 def save_best_actor(population, fitnesses, generation, config):
     indices, rewards = fitnesses
-    best_actor = select_inidviduals(population, indices[0])
+    best_actor = select_inidviduals(population, [indices[0]])
     #first convert to cpu numpy
     for network in best_actor.keys():
         for param in best_actor[network].keys():
-            best_actor[network][param] = best_actor[network][param].cpu().numpy().tolist()
+            param_type = type(best_actor[network][param])
+            if param_type == torch.Tensor:
+                best_actor[network][param] = best_actor[network][param].cpu().numpy().tolist()
+            elif param_type == type(0):
+                best_actor[network][param] = best_actor[network][param]
+            else:
+                raise Exception("unknown param type: {}".format(param_type))
     save_dict = {}
     save_dict["actor"] = best_actor
     save_dict["fitness"] = rewards[indices[0]].tolist()

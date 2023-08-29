@@ -1,5 +1,6 @@
 import yaml
 import datetime
+import torch
 
 class Config:
     @staticmethod
@@ -13,6 +14,10 @@ class Config:
     def __init__(self, data):
         self._set_attributes(data)
         self.timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        cuda_available = torch.cuda.is_available()
+        if not cuda_available and self.device == 'cuda':
+            print("WARNING: device set to cuda, but cuda is not available. Using cpu instead.")
+            self.device = 'cpu'
 
     def _set_attributes(self, data, prefix=None):
         for key, value in data.items():

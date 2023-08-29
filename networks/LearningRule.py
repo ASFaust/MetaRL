@@ -30,21 +30,12 @@ class LearningRule:
                                     device=device)
                 }
 
-    @staticmethod
-    def load(path,device='cuda'):
-        params = torch.load(path) #will this return a dictionary?
-        return LearningRule(params)
-
     def __init__(self,params):
         self.batch_dim = params["node_network"]["w_state"].shape[0]
         self.node_network = LearningRuleNetwork(params["node_network"])
         self.connection_network = LearningRuleNetwork(params["connection_network"])
         self.reward_network = LearningRuleNetwork(params["reward_network"])
         self.params = params
-
-    def save(self,path):
-        #can torch save dictionaries? yes it can
-        torch.save(self.params,path)
 
     def count_params(self):
         return self.node_network.count_params() + self.connection_network.count_params() + self.reward_network.count_params()
