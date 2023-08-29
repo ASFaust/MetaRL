@@ -7,8 +7,9 @@ class Config:
     def load(path):
         with open(path, 'r') as f:
             data = yaml.safe_load(f)
+        if type(data) is not dict:
+            raise Exception(f"Config file {path} is not a valid yaml file.")
         data['path'] = path
-
         #format the timestamp as YYYY-MM-DD_HH:MM:SS
         return Config(data)
 
