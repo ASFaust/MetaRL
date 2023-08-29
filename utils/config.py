@@ -7,7 +7,9 @@ class Config:
     def load(path):
         with open(path, 'r') as f:
             data = yaml.safe_load(f)
+        print(data)
         data['path'] = path
+
         #format the timestamp as YYYY-MM-DD_HH:MM:SS
         return Config(data)
 
