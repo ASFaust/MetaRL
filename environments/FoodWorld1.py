@@ -17,8 +17,8 @@ class FoodWorld1:
         self.min_food_distance = 0.1
         # if the actor is within this distance of the food particle, the food particle is eaten and a new one is spawned
         # action dim is 2, because the actor can move in x and y
-        self.action_dim = 4
-        self.action_space = torch.tensor([[-1.0, 0.0], [0.0, 1.0], [-1.0, 0.0], [0.0, 1.0]], device=self.device) * 0.01
+        self.action_dim = 2
+        self.action_space = torch.tensor([[-1.0, 1.0], [-1.0, 1.0]], device=self.device) * 0.01
         self.observation_dim = 7
         self.reset()
 
@@ -26,7 +26,7 @@ class FoodWorld1:
         self.state = torch.zeros((self.batch_size, 7), device=self.device)
         #set the position of the food particle to 1,0.5
         self.state[:, 4] = 1.0
-        self.state[:, 5] = 0.5
+        self.state[:, 5] = -1.0
         #normalize the food particle position to be distance 1 from the center
         distance = torch.norm(self.state[:, 4:6], dim=1, keepdim=True)
         self.state[:, 4:6] = self.state[:, 4:6] / distance
@@ -41,11 +41,7 @@ class FoodWorld1:
 
         # 2. Update velocities
         vel *= 0.9
-        #action [:,0] is the negative x velocity, action[:,1] is the positive y velocity
-        vel[:, 0] += action[:, 0]
-        vel[:, 0] += action[:, 1]
-        vel[:, 1] += action[:, 2]
-        vel[:, 1] += action[:, 3]
+        vel += action
 
         # 3. Cap velocities at a maximum speed
         speed = torch.norm(vel, dim=1, keepdim=True)

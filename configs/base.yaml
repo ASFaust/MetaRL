@@ -5,32 +5,37 @@ seed: null #if a seed neq null is given, the run is deterministic
 # Genetic Algorithm parameters
 population_size: 10000
 num_survivors: 200
-num_eval_steps: 1000
-evals_per_gen: 10 #to average over multiple evaluations might give a more stable fitness
+num_eval_steps: 200
+#it seems like multiple evaluations do give a more stable fitness
+evals_per_gen: 1 #to average over multiple evaluations might give a more stable fitness
+#another improvement i made is using the minimum fitness of the evaluations instead of the mean,
+#so that we are basically minmaxing instead of averaging
 mutation_probability: 0.05
 mutation_strength: 0.01
 generations: 10000
 
 #learning rule parameters
 signal_dim: 1 #dimension of the backwards learning signal
-state_dim: 2 #dimension of the recurrent states of the 3 learning rule networks
+state_dim: 2 #dimension of the recurrent states of the 2 learning rule networks
 init_std: 1.0 #initial standard deviation of the weights of the learning rule networks, for population initialization
 
 # Environment parameters
 env_name: FoodWorld1
 reward_type: delta #value, delta or penalized_delta
+action_dim: 2 #dimension of the action space
 
 # ActorNetwork parameters
 # the environments have different input dimensionalities:
 # double pendulum: 6
 # pendulum: 3
 # the actor network is fully connected with the given shape
-network_shape: [7, 8, 4] # hidden dimensions of the network. input and output dimensions are determined by the environment.
+network_shape: [7, 8, 8, 2] # hidden dimensions of the network. input and output dimensions are determined by the environment.
+action_location: 2 #index of the network shape where the action is located. 0 is the first hidden layer, 1 the second, etc.
 weight_limit: 4.0 # [-weight_limit, weight_limit] is the range of the weights
-weight_init: 1.0 #weights are normally distributed with mean 0 and std weight_init*weight_limit at the beginning of each evaluation
-sigma_limit: 1.0 #[0, sigma_limit] is the range of the standard deviation of the output sampling of the neurons
+weight_init: 0.001 #weights are normally distributed with mean 0 and std weight_init*weight_limit at the beginning of each evaluation
+sigma_limit: 0.0 #[0, sigma_limit] is the range of the standard deviation of the output sampling of the neurons
 sigma_init: 0.0 #Initial value of the standard deviation of the output sampling of the neurons
-learning_rate: 1.0 #maximal change of a weight in a step is [-learning_rate, learning_rate]
+learning_rate: 0.01 #maximal change of a weight in a step is [-learning_rate, learning_rate]
 
 node_info_dim: 5 #magic number, do not change. corresponds to the number of values in actornetworklayer.get_node_info()
 

@@ -129,7 +129,7 @@ def save_best_actor(population, fitnesses, generation, config):
     #first get the config name, which is config.path
     config_name = config.path.split("/")[-1].split(".")[0]
     timestamp = config.timestamp
-    filename = "{}_{}_gen{}.yaml".format(timestamp, config_name, generation)
+    filename = "{}_{}_gen{:04d}.yaml".format(timestamp, config_name, generation)
     filepath = os.path.join("results", filename)
     with open(filepath, "w") as f:
         yaml.dump(save_dict, f, default_flow_style=True)

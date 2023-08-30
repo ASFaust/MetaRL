@@ -21,6 +21,7 @@ class LearningRuleNetwork:
         self.state_dim = params["state_dim"]
         self.input_dim = params["w_output"].shape[1] - self.state_dim
         self.output_dim = params["w_output"].shape[2]
+
         if self.state_dim > 0:
             self.w_state = params["w_state"]  # (batch_dim, input_dim + state_dim, state_dim),
             self.b_state = params["b_state"]  # (batch_dim, state_dim),
