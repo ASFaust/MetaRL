@@ -2,10 +2,10 @@ import numpy as np
 import torch
 import sys
 import cv2
-from environments import get_env
+from environments import Environment
 from utils import Config
 
-env = get_env(Config({
+env = Environment(Config({
     "env_name": sys.argv[1],
     "population_size": 1,
     "device": 'cpu',
@@ -15,10 +15,14 @@ env = get_env(Config({
 
 #env.force = torch.tensor([0.0])
 
+ms_per_step = 1
+if len(sys.argv) > 2:
+    ms_per_step = int(sys.argv[2])
+    ms_per_step = max(ms_per_step, 1)
+
 for i in range(10000):
-    env.step()
-    img = env.render(0,100)
-    print(env.reward)
+    reward,observation = env.step(env.random_action())
+    img = env.render(0)
     cv2.imshow('img', img)
-    cv2.waitKey(1)
+    cv2.waitKey(ms_per_step)
     

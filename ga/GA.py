@@ -1,4 +1,4 @@
-from environments import get_env
+from environments import Environment
 from networks import get_actor, LearningRule
 import numpy as np
 import torch
@@ -15,34 +15,35 @@ def create_population(config):
         config.device)
 
 def evaluate(params, config):
-    rewards = np.zeros(config.population_size)
+    sum_reward = np.ones(config.population_size) * 2**31
     step = 0
     n_steps = config.num_eval_steps * config.evals_per_gen
+    env = Environment(config)
     for j in range(config.evals_per_gen):
-        env = get_env(config)
-        actors = get_actor(params, config)
+        actor = get_actor(params, config)
+        observation = env.reset()
+        new_sum_reward = np.zeros(config.population_size)
         for i in range(config.num_eval_steps):
             step += 1
             print("\rstep: {}/{}".format(step, n_steps), end="", flush=True)
-            observations = env.get_state()
-            actions = actors.forward(observations) * config.actor_force
-            env.torque = actions.squeeze()
-            env.step_rk4(config.env_step_size)
-            reward = env.get_reward()
-            rewards += reward.cpu().numpy()
-            actors.train(reward)
-    rewards /= config.evals_per_gen
+            action = actor.forward(observation)
+            action = env.normalize_action(action)
+            observation,reward = env.step(action)
+            actor.train(reward)
+            new_sum_reward += reward.cpu().numpy()
+        sum_reward = np.minimum(sum_reward, new_sum_reward)
+    #sum_reward /= config.evals_per_gen
     print("\ndone")
-    indices = np.argsort(rewards)[::-1].copy()
-    return indices, rewards
+    indices = np.argsort(sum_reward)[::-1].copy()
+    return indices, sum_reward
 
 def print_stats(fitnesses):
-    indices, rewards = fitnesses
-    sr = rewards[indices]
+    indices, sum_reward = fitnesses
+    sr = sum_reward[indices]
     print("best reward: {}".format(sr[0]))
     print("worst reward: {}".format(sr[-1]))
-    print("average reward: {}".format(np.mean(rewards)))
-    print("median reward: {}".format(np.median(rewards)))
+    print("average reward: {}".format(np.mean(sum_reward)))
+    print("median reward: {}".format(np.median(sum_reward)))
 
 def select_inidviduals(population, indices):
     ret = {}
@@ -70,7 +71,7 @@ def mutate_tensor(tensor, config):
     return tensor
 
 def create_new_population(population, fitnesses, config):
-    indices, rewards = fitnesses
+    indices, sum_reward = fitnesses
     #config.num_survivors holds the number of survivors
     #config.population_size holds the population size
     survivors = select_inidviduals(population, indices[:config.num_survivors])
@@ -105,7 +106,7 @@ def create_new_population(population, fitnesses, config):
     return mutated
 
 def save_best_actor(population, fitnesses, generation, config):
-    indices, rewards = fitnesses
+    indices, sum_reward = fitnesses
     best_actor = select_inidviduals(population, [indices[0]])
     #first convert to cpu numpy
     for network in best_actor.keys():
@@ -119,7 +120,7 @@ def save_best_actor(population, fitnesses, generation, config):
                 raise Exception("unknown param type: {}".format(param_type))
     save_dict = {}
     save_dict["actor"] = best_actor
-    save_dict["fitness"] = rewards[indices[0]].tolist()
+    save_dict["fitness"] = sum_reward[indices[0]].tolist()
     save_dict["config"] = config.to_dict()
     #save as yaml in results folder.
     #name is {timestamp}_{config_name}_gen{generation}_.yaml

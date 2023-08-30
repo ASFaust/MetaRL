@@ -23,7 +23,8 @@ class ActorNetworkLayer:
         if seed is not None:
             torch.manual_seed(seed)
         weight_range = config.weight_init * config.weight_limit
-        self.weights = torch.randn((self.batch_dim, input_dim, output_dim), device=self.device) * weight_range
+        self.weights = torch.randn((1, input_dim, output_dim), device=self.device) * weight_range
+        self.weights = self.weights.repeat(self.batch_dim, 1, 1).clone()
         self.biases = torch.randn(self.batch_dim, output_dim, device=self.device) * weight_range
         self.sigmas = torch.ones(self.batch_dim, output_dim, device=self.device) * config.sigma_init
 
@@ -94,11 +95,25 @@ class ActorNetworkLayer:
         # signal for the next layer, signal for the biases, signal for the lambdas
         # the signal for the next layer is the first signal_dim entries
         signal_connections = out[:, :, 0:self.signal_dim]
-        # the signal for the biases is the next entry
-        signal_bias = out[:, :, self.signal_dim]
+        # the signal for the biases is the next 2 entries
+        signal_bias = out[:, :, self.signal_dim:self.signal_dim + 2]
+        # the signal for the bias is 2 because it has a negative and a positive part
+        signal_bias_positive = signal_bias[:, :, 0]
+        signal_bias_negative = signal_bias[:, :, 1]
+        #relu both to make sure they are positive
+        signal_bias_positive = torch.relu(signal_bias_positive)
+        signal_bias_negative = -torch.relu(-signal_bias_negative)
+        signal_bias = signal_bias_positive + signal_bias_negative
         # has shape (batch_dim, output_dim)
-        # the signal for the sigmas is the last entry
-        signal_sigma = out[:, :, self.signal_dim + 1]
+        # the signal for the sigmas is the last 2 entries
+        signal_sigma = out[:, :, self.signal_dim + 2:self.signal_dim + 4]
+        # the signal for the sigma is 2 because it has a negative and a positive part
+        signal_sigma_positive = signal_sigma[:, :, 0]
+        signal_sigma_negative = signal_sigma[:, :, 1]
+        # relu both to make sure they are positive
+        signal_sigma_positive = torch.relu(signal_sigma_positive)
+        signal_sigma_negative = -torch.relu(-signal_sigma_negative)
+        signal_sigma = signal_sigma_positive + signal_sigma_negative
 
         # now alter sigmas and biases
 
@@ -155,8 +170,14 @@ class ActorNetworkLayer:
         # this is the signal that we pass to the next layer
         signal_next_layer = torch.mean(signal_next_layer, dim=2)  # todo: maybe more, different aggregation functions?
 
-        # the second part is the weight update signal
-        signal_weight_update = out[:, :, :, self.signal_dim]
+        # the second part is the weight update signals:
+        signal_weight_update = out[:, :, :, self.signal_dim:self.signal_dim + 2]
+        signal_weight_update_positive = signal_weight_update[:, :, :, 0]
+        signal_weight_update_negative = signal_weight_update[:, :, :, 1]
+        # relu both to make sure they are positive
+        signal_weight_update_positive = torch.relu(signal_weight_update_positive)
+        signal_weight_update_negative = -torch.relu(-signal_weight_update_negative)
+        signal_weight_update = signal_weight_update_positive + signal_weight_update_negative
         # has shape (batch_dim, output_dim, input_dim), same as self.weights
         self.weights = self.weights + signal_weight_update * self.learning_rate
         # clip weights
